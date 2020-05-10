@@ -1,6 +1,0 @@
-The top left section shows the commits from branches in a tree-like format, information about the branches, and relationship between branches. Below that is the SHA1 ID of the selected commit.
-The top middle section shows the name and email of the author who made the commits.
-The top right section shows the date and time of the commits.
-
-The bottom left section shows the ChangeLog of the commit, set to ‘Diff’ format.
-The bottom right section shows the files that are related to the selected commit.
