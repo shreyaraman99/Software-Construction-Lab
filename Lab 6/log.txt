@@ -1,0 +1,54 @@
+Lab
+
+PREPEND
+$ export PATH=/usr/local/cs/bin:$PATH
+
+I ran this command to check the version
+$ sort —-version
+The terminal tells me that I have version 8.30
+
+To create 16777216 single-precision floating points numbers, I did 
+$ od -An -f -N $(((2**24)*4)) < /dev/urandom | tr -s ‘ ‘ ‘\n’ > float.txt
+I did this because one single-precision flop takes 4 bytes and we want 16777216 of them.
+
+I used this following to check
+$ wc -l float.txt
+There was an extra newline character at the beginning so I deleted it and rechecked
+$ emacs float.txt
+
+Sort directly
+$ time -p sort -g float.txt > /dev/null
+real   37.59
+user   194.84
+sys    2.59	
+
+
+1 thread
+$ time -p sort -g —-parallel=1 float.txt > /dev/null
+real   177.78
+user   177.42
+sys    0.34
+
+
+2 threads
+$ time -p sort -g —-parallel=2 float.txt > /dev/null
+real   95.39
+user   181.01
+sys    0.57
+
+
+4 threads
+$ time -p sort -g —-parallel=4 float.txt > /dev/null
+real   54.89
+user   184.29
+sys    0.81
+
+
+8 threads
+$ time -p sort -g —-parallel=8 float.txt > /dev/null
+real   34.93
+user   192.74
+sys    1.09
+
+As we increase the number of threads, the ‘real’ time decreases rapidly while ‘sys’ time and ‘user’ times slightly increase. It is likely that the sys time increases because the more threads there 
+are, the more sys calls they make. The first default times are similar to the times for 8 threads, so I think the default likely runs with 8 threads.

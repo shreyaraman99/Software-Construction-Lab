@@ -1,0 +1,79 @@
+I typed the shell command 'export LC_ALL='C'' to change the locale to the 
+standard C locale. I verified this change by typing 'locale' and looked 
+for the expected output.
+
+I then copied the list of English words and sorted them by typing 'sort 
+/usr/share/dict/words >words' and stored this list in a file called words.
+
+Then I got the contents of the assignment webpage using wget by typing 
+'wget http://web.cs.ucla.edu/classes/fall18/cs35L/assign/assign2.html', 
+and then I converted that to a text file by typing 
+'mv assign2.html assign2.txt'.
+
+Running the command 'tr -c 'A-Za-z' '[\n*]' < assign2.txt' prints every 
+word of the file with many new line characters between them. This 
+happens because 'tr -c' takes the complement of the first set, which is 
+every letter. The complement is therefore every non letter character in 
+that line. Since there is a different number of non letter characters in 
+each line, some words have more newline characters than others. The non 
+letter characters are replaced with a newline because the command 
+has '[\n*]'.
+
+Running the command 'tr -cs 'A-Za-z' '[\n*]' < assign2.txt' prints every
+ word of the file on a new line. This is essentially the same thing as 
+the previous command, except new lines corresponding to the non letter 
+characters are deleted.
+
+I ran the command 'tr -cs 'A-Za-z' '[\n*]' < assign2.txt | sort'. This 
+adds a newline character for every non letter character because of '-c' 
+and squeezes everything together because of '-s', therefore removing the 
+extra new line characters. This is piped into the sort command, so the 
+output is words sorted by ASCII characters.
+
+Then I ran the command 'tr -cs 'A-Za-z' '[\n*]' < assign2.txt | sort -u'. 
+This does the same thing as the previous command with one exception. The 
+‘-u’ deletes all duplicate characters, so the output is every word from 
+the file on a new line with no duplicates.
+
+Then I ran the command 'tr -cs 'A-Za-z' '[\n*]' < assign2.txt | sort -u | 
+comm - words'. This command compares the result from standard input with 
+the result of words and outputs three columns. The first column lists 
+everything different to the standard input, which in this case is the 
+sorted non duplicated words from the HTML file. The second column lists 
+everything different to the words file. The third column lists everything 
+similar in both.
+
+Then I ran the command 'tr -cs 'A-Za-z' '[\n*]' < assign2.txt | sort -u | 
+comm -23 - words'. This command outputs the words from the standard input 
+that are unique to the standard input. This does the same thing as the 
+previous command, but the ‘comm -23’ removes the second and third columns.
+
+To complete the lab, I do the following. I first download the English to 
+Hawaiian table by typing ‘wget http://mauimapp.com/moolelo/hwnwdseng.htm’.
+
+This is the buildwords script:
+
+#!/bin/bash
+grep -E '<td>.+</td>' |
+sed '/<tr>/,/<\/td>/d' | 
+sed 's/<\/td>/\n/g' |
+tr -d '\r\n' |
+tr [:upper:] [:lower:] |
+sed s/\`/\'/g |
+sed 's/^\s*//g' |
+sed s/\,/\n/g |
+tr -cs "pk\'mnwlhaeiou" '[\n*]' |
+sed '/^$/d'
+sort -u
+
+To check the webpage with hwords, I typed 'tr -cs 'A-Za-z' '[\n*]' | 
+tr [:upper:] [:lower:] | sort -u | comm -23 - hwords'
+
+There are 38 misspelled English words. There are 199 misspelled 
+Hawaiian words.
+
+There are many words that are misspelled as Hawaiian but not in 
+English. A few of these words are apostrophe, handle, prefer, shown, 
+web, and your.
+There are 3 words that are misspelled in English but not in Hawaiian. 
+These words are halau, lau, and wiki.

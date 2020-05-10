@@ -1,0 +1,80 @@
+Use the time command to compare the overall performance of sfrob, sfrobu, sfrobs, sfrobu -f, and sfrobs -f
+
+
+$ head —-bytes=1000000 /dev/urandom > testing_1M
+$ head —-bytes=10000000 /dev/urandom > testing_10M
+
+
+1. testing_1M
+a) unbuffered 
+$ time ./sfrob < testing_1M > output.txt
+real	0m0.054s
+user	0m0.051s
+sys	0m0.003s
+
+b) buffered 
+$ time ./sfrobu < testing_1M > output.txt
+real	0m0.740s
+user	0m0.115s
+sys	0m0.624s
+
+	
+c) shell script
+$ time ./sfrobs < testing_1M > output.txt
+real	0m0.023s
+user	0m0.006s
+sys	0m0.016s
+
+d) unbuffered -f
+$ time ./sfrobu -f < testing_1M > output.txt
+real	0m0.742s
+user	0m0.120s
+sys	0m0.620s
+	
+e) shell script -f
+$ time ./sfrobs -f < testing_1M > output.txt
+real	0m0.028s
+user	0m0.009s
+sys	0m0.015s
+
+
+
+2. testing_10M
+a) unbuffered 
+$ time ./sfrob < testing_10M > output.txt CHECK
+real	0m0.532s
+user	0m0.482s
+sys	0m0.025s
+
+
+b) buffered
+$ time ./sfrobu < testing_10M > output.txt
+real	0m7.719s
+user	0m1.220s
+sys	0m6.497s
+	
+c) shell script 
+$ time ./sfrobs < testing_10M > output.txt
+real	0m0.153s
+user	0m0.052s
+sys	0m0.049s
+
+d) unbuffered -f
+$ time ./sfrobu -f < testing_10M > output.txt
+real	0m7.969s
+user	0m1.190s
+sys	0m6.776s
+
+	
+e) shell script -f 
+$ time ./sfrobs -f < testing_10M > output.txt
+real	0m0.155s
+user	0m0.049s
+sys	0m0.053s
+
+
+The shell script is the fastest because it’s the default on linux.
+Unbuffered are a lot slower than buffered. This is because the unbuffered version uses system calls and takes a longer time to transfer between user and kernel mode.
+-f doesn’t seem to have much of an effect on the times, but it is a little bit slower.
+
+Running sfrobu on varying number of input lines shows that the number of comparisons is around n*log(n).

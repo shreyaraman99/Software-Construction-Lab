@@ -1,0 +1,33 @@
+Q1: This patch improves the performance of ls. It allows for -A to overwrite
+the -a flag when called as ls -a -A. It also removes an if statement from the
+source code of ls, which means it will run slightly faster.
+
+
+Q2: The user of Coreutils may not intend for -A to override -a, so the patch
+actually doesn’t align with the intentions of the user.
+
+
+Q3: When the script is invoked on an empty file, we get errors:
+Tracebakc (most recent call last):
+File “./randline.py”, line 70, in <module> 
+ main()
+File “./randline.py”, line 64, in main 
+ sys.stdout.write(generator.chooseline())
+File “./randline.py”, line 34, in choose lines
+ return random.choice(self.lines)
+File “/usr/lib64/python2.7/random.py” line 274, in choice
+ return seq[int(self.random() * len(seq))] # raises IndexError if seq is empty
+    IndexError: list index out of range 
+
+We get these errors because the script expects a value to be inputted, but the
+there is no input because of the empty file.
+
+
+Q4: When the script is invoked with Python 3, the following happens:
+File “landline.py”, line 65
+ except IOError as (errno, strerror):
+                   ^
+   SyntaxError: invalid syntax
+
+This error occurs because Python 3 doesn’t allow automatic tuple unpacking. To
+fix this, we would have to pass in a single argument. 

@@ -1,0 +1,55 @@
+Homework: Verifying and publishing a backported change
+
+2. I checked out version 3.0 and switched into the new branch
+$ cd diffutils
+$ git checkout v3.0 -b quote
+
+3. I applied the change 
+$ patch -p1 < quote-3.0-patch.txt
+patching file src/cmp.c
+patching file src/diff.c
+patching file src/diff3.c
+patching file src/dir.c
+patching file src/sdiff.c
+patching file src/util.c
+
+
+4. I learned that C-x 4 a adds a new entry to the change log file
+
+5. $ emacs quote-3.0-patch.txt
+C-x 4 a
+
+
+I used emacs to add ChangeLog onto all the files with proper comments
+
+6. I commit the changes
+$ git add .
+$ git commit -F Changelog
+
+7. Generate formatted patch
+$ git format-patch -1 —-stdout > formatted-patch.txt
+
+8. Apply partner’s patch to working directory
+My partner is Shirly Fang and her UID is 804938473
+$ git checkout v3.0 -b partner
+$ git am < partner-patch.txt
+$ ./bootstrap
+$ patch -p0 < diffutils-gets.diff
+$ ./configure
+$ make
+
+I made sure everything was successful with
+$ ./src/diff . -
+$ ./src/diff --
+
+$ make check
+
+9. Verify that the ChangeLog entry works
+$ make distdir
+
+10.
+$ ssh -Y kamu@lnxsrv06.seas.ucla.edu
+$ cd ~eggert/src/gnu/emacs
+$ gitk
+
+I found the newest merge on 01/25/2015

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+grep -E '<td>.+</td>' |
+sed '/<tr>/,/<\/td>/d' | 
+sed 's/<\/td>/\n/g' |
+tr -d '\r\n' |
+tr [:upper:] [:lower:] |
+sed s/\`/\'/g |
+sed 's/^\s*//g' |
+sed s/\,/\n/g |
+tr -cs "pk\'mnwlhaeiou" '[\n*]' |
+sed '/^$/d'
+sort -u

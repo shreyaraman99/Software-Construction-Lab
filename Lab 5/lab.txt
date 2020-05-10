@@ -1,0 +1,131 @@
+Laboratory: Buffered versus unbuffered I/O
+
+——Questions 1 & 2——
+
+I wrote the programs tr2b.c and tr2u.c so that tr2b.c uses getchar and putchar using buffered I/O and tr2u.c uses read and write using unbuffered I/O.
+
+To compile and run tr2b.c and tr2u.c, I typed the following:
+
+$ gcc -std=c11 tr2b.c -o tr2b
+$ gcc -std=c11 tr2u.c -o tr2u
+
+——Question 3——
+
+I created a large file with 5,000,000 bytes by typing:
+
+$ head —bytes=5000000 /dev/urandom > big
+
+Then I used the strace command to compare the system calls issued by tr2b and tr2u when a) copying one file to another and b) copying a file to my terminal
+
+(a) copying one file to the other
+$ strace -c ./tr2b 'abc' 'xyz' < big > output_tr2b
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 51.03    0.000717           1       611           write
+ 31.60    0.000444           1       613           read
+  4.27    0.000060           7         9           mmap
+  3.42    0.000048          48         1           execve
+  3.20    0.000045          45         1           brk
+  1.85    0.000026           7         4           mprotect
+  1.28    0.000018           5         4           fstat
+  1.00    0.000014           7         2           open
+  0.93    0.000013          13         1         1 access
+  0.78    0.000011          11         1           munmap
+  0.43    0.000006           3         2           close
+  0.21    0.000003           3         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.001405                  1250         1 total
+
+
+$ strace -c ./tr2u 'abc' 'xyz' < big > output_tr2u
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 55.46   20.063818           4   5000000           write
+ 44.54   16.111768           3   5000002           read
+  0.00    0.000048           7         7           mmap
+  0.00    0.000045          45         1           brk
+  0.00    0.000018           9         2           open
+  0.00    0.000015          15         1           execve
+  0.00    0.000011          11         1         1 access
+  0.00    0.000010           3         4           mprotect
+  0.00    0.000006           3         2           fstat
+  0.00    0.000005           3         2           close
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00   36.175744              10000024         1 total
+
+
+(b)
+strace -c ./tr2b 'abc' 'xyz' < big
+time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 97.71    0.071623           4     19873           write
+  2.29    0.001677           3       613           read
+  0.00    0.000000           0         2           open
+  0.00    0.000000           0         2           close
+  0.00    0.000000           0         4           fstat
+  0.00    0.000000           0         9           mmap
+  0.00    0.000000           0         4           mprotect
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           brk
+  0.00    0.000000           0         1         1 access
+  0.00    0.000000           0         1           execve
+  0.00    0.000000           0         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.073300                 20512         1 total
+
+
+
+strace -c ./tr2u 'abc' 'xyz' < big
+time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 57.54   22.650543           5   5000000           write
+ 42.46   16.716849           3   5000002           read
+  0.00    0.000047           7         7           mmap
+  0.00    0.000044          44         1           brk
+  0.00    0.000041          41         1           execve
+  0.00    0.000028           7         4           mprotect
+  0.00    0.000019          10         2           open
+  0.00    0.000012          12         1         1 access
+  0.00    0.000011          11         1           munmap
+  0.00    0.000007           4         2           fstat
+  0.00    0.000006           3         2           close
+  0.00    0.000003           3         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00   39.367610              10000024         1 total
+
+
+
+——Question 4——
+
+Using the time command, we can measure how much faster one program is, compared to the other, when copying the same amount of data.
+
+(a)
+$ time ./tr2b 'abc' 'xyz' < big > output_tr2b
+
+real	0m0.263s
+user	0m0.213s
+sys	0m0.006s
+
+
+time ./tr2u 'abc' 'xyz' < big > output_tr2u
+
+real	0m10.010s
+user	0m1.255s
+sys	0m8.709s
+
+
+(b)
+$ time ./tr2b 'abc' 'xyz' < big
+real	0m4.372s
+user	0m0.283s
+sys	0m0.086s
+
+
+$ time ./tr2u 'abc' 'xyz' < big
+real	0m8.959s
+user	0m1.410s
+sys	0m7.522s

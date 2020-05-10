@@ -1,0 +1,121 @@
+Laboratory: C programming and debugging
+
+I downloaded the old version of coreutils by typing
+$ wget https://web.cs.ucla.edu/classes/fall18/cs35L/assign/coreutils-with-bug.tar.gz
+I then untarred it by typing
+$ tar -xzf coreutils-with-bug.tar.gz
+Then I moved into that directory by typing
+$ cd coreutils-with-bug
+Then configure and make by typing
+$ ./configure
+$ make
+
+I got the following errors:
+
+In file included from utimecmp.c:41:0:
+utimens.h:2:5: error: conflicting types for 'futimens'
+ int futimens (int, char const *, struct timespec const [2]);
+     ^
+In file included from utimecmp.h:25:0,
+                 from utimecmp.c:25:
+/usr/include/sys/stat.h:373:12: note: previous declaration of 'futimens' was here
+ extern int futimens (int __fd, const struct timespec __times[2]) __THROW;
+            ^
+make[3]: *** [utimecmp.o] Error 1
+make[3]: Leaving directory `/w/home.19/cs/ugrad/kamu/coreutils-with-bug/lib'
+make[2]: *** [all] Error 2
+make[2]: Leaving directory `/w/home.19/cs/ugrad/kamu/coreutils-with-bug/lib'
+make[1]: *** [all-recursive] Error 1
+make[1]: Leaving directory `/w/home.19/cs/ugrad/kamu/coreutils-with-bug'
+make: *** [all] Error 2
+
+I then downloaded the patch by typing
+$ wget https://web.cs.ucla.edu/classes/fall18/cs35L/assign/coreutils.diff
+Then I applied the patch by typing
+$ cp coreutils.diff patch_file
+$ patch -p0 < patch_file
+
+I got this output, showing the 5 files that were modified:
+patching file lib/utimens.c
+patching file lib/utimens.h
+patching file src/copy.c
+patching file src/tee.c
+patching file src/touch.c
+
+The patch changed ‘futimens’ to ‘coreutils_futimens’ and ‘tee’ changed to ‘coreutils_tee’.
+
+I rebuild the program by typing
+$ make
+
+Then I tested the bug by typing the given test:
+$ tmp=$(mktemp -d)
+$ cd $tmp
+$ touch -d '1918-11-11 11:00 GMT' wwi-armistice
+$ touch now
+$ sleep 1
+$ touch now1
+$ TZ=UTC0 ls -lt --full-time wwi-armistice now now1
+-rw-r--r-- 1 eggert csfac 0 1918-11-11 11:00:00.000000000 +0000 wwi-armistice
+-rw-r--r-- 1 eggert csfac 0 2018-10-29 16:43:16.805404419 +0000 now1
+-rw-r--r-- 1 eggert csfac 0 2018-10-29 16:43:15.801376773 +0000 now
+$ cd
+$ rm -fr $tmp
+
+The output, shown above, shows that the oldest file is displayed first when it should be displayed last. I used the GDB debugger to figure out what went wrong.
+$ gdb ~/coreutils-with-bug/src/ls
+
+I then typed the following to get the list of functions
+(gdb) info functions
+
+I saw a function named compare_mtime, and since the error has to do with time, I assume I should look into this function. I set a breakpoint at this functions
+(gdb) break compare_mtime
+
+Then I ran the program with 
+(gdb) run -lt wwi-armistice now now1
+
+When the breakpoint was reached, I typed
+(gdb) si
+(gdb) list
+
+I got the following output:
+45    static inline int
+46    timespec_cmp (struct timespec a, struct timespec b)
+47    {
+48      int diff = a.tv_sec - b.tv_sec;
+49	  return diff ? diff : a.tv_nsec - b.tv_nsec;
+50	  }
+
+Looking at these lines, I saw a potential source of error in line 48, when the diff is calculated. If a.tv_sec is small enough, integer overflow can occur and the result of diff would be 
+extremely large.
+
+To fix this issue, I made a duplicate of timespec.h by typing
+$ cd ~/coreutils-with-bug/lib
+$ cp timespec.h timespec_og.h
+
+I then edited timespec.h
+$ emacs timespec.h
+C-x C-c
+
+Then I typed the following to make a patch file containing the difference
+$ diff -u coreutils-with-bug/lib/timespec_og.h timespec.h > coreutils-with-bug/lab4.diff
+
+I applied the patch with
+$ patch -p0 < lab4.diff
+
+I reproduced the bug using the steps I originally did at first (how I tested the program before creating this patch) and got this output:
+
+-rw-r--r-- 1 eggert csfac 0 2018-10-29 16:43:16.805404419 +0000 now1
+-rw-r--r-- 1 eggert csfac 0 2018-10-29 16:43:15.801376773 +0000 now
+-rw-r--r-- 1 eggert csfac 0 1918-11-11 11:00:00.000000000 +0000 wwi-armistice
+
+When reproducing the bug in my home directory, I got the following output:
+
+-rw-r--r-- 1 kamu csugrad 0 Dec 17  2054 wwi-armistice
+-rw-r--r-- 1 kamu csugrad 0 Nov  1 15:24 now1
+-rw-r--r-- 1 kamu csugrad 0 Nov  1 15:24 now
+
+It shows the date for www-armistice as December 17, 2054 instead of November 11, 1918. The reason for this is because the date is represented as seconds since Unix Epoch, which is 
+January 1, 1970. 
+
+The SEASnet NFS filesystem uses unsigned 32-bit timestamps, while the local File System on Linux uses signed timestamps. Since 1918 is before the Epoch, we get a negative value. Since 
+SEASnet uses unsigned timestamps, the sign bit is interpreted as a positive value, causing the date to show as 2054. 

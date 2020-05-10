@@ -1,0 +1,63 @@
+#!/bin/bash
+
+dir=$1
+D=`ls -a $dir | grep '^\.' | sort`
+let count=0
+declare -a ARR
+IFS=$'\n'
+
+for HFL in $D
+do
+    if [ ! -L "$dir/$HFL" ] && [ ! -d "$dir/$HFL" ]
+    then
+       if [ "$HFL" = . ] || [ "$HFL" = .. ]
+       then
+          continue
+       fi
+       if [ -f "$dir/$HFL" ] && [ -r "$dir/$HFL" ]
+       then
+          if [[ $HFL = \.* ]]
+          then
+             ARR[$count]="$dir/$HFL"
+             let count=count+1
+          fi
+       else
+          echo "$HFL isn't readable"
+       fi
+    fi
+done
+
+for FL in $D
+do
+    if [ ! -L "$dir/$FL" ] && [ ! -d "$dir/$FL" ]
+    then
+       if [ -f "$dir/$FL" ]
+       then
+          if [[ $FL != \.* ]]
+          then
+             if [ -r "$dir/$FL" ]
+             then
+                ARR[$count]="$dir/$FL"
+                let count=count+1
+             else
+                echo "$FL isn't readable"
+             fi
+          fi
+       else 
+          echo "$FL isn’t regular"
+       fi
+    fi
+done
+
+for (( i=0; i<$count; i++ ))
+do
+    for (( j=i+1; j<$count; j++ ))
+    do
+       cmp -s "${ARR[$i]}" "${ARR[$j]}"
+       if [ $? -eq 0 ]
+       then
+           ln -fP "${ARR[$i]}" "${ARR[$j]}"
+           ARR[$j]=ARR[$i]
+       fi
+    done
+done
